@@ -1,5 +1,5 @@
 
-//  Created by Christopher Dro on 9/4/15.
+//  Created by Alex Levy on 16 May 19.
 
 #import "RNPrint.h"
 #import <React/RCTConvert.h>
@@ -92,8 +92,12 @@ RCT_EXPORT_METHOD(print:(NSDictionary *)options
     if (_pickedPrinter) {
         [printInteractionController printToPrinter:_pickedPrinter completionHandler:completionHandler];
     } else if([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) { // iPad
-        UIView *view = [[UIApplication sharedApplication] keyWindow].rootViewController.view;
-        [printInteractionController presentFromRect:view.frame inView:view animated:YES completionHandler:completionHandler];
+        UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
+        while (rootViewController.presentedViewController != nil) {
+            rootViewController = rootViewController.presentedViewController;
+        }
+        CGRect rect = CGRectMake(rootViewController.view.bounds.size.width/2, rootViewController.view.bounds.size.height/2, 1, 1);
+        [printInteractionController presentFromRect:rect inView:rootViewController.view animated:YES completionHandler:completionHandler];
     } else { // iPhone
         [printInteractionController presentAnimated:YES completionHandler:completionHandler];
     }
@@ -126,8 +130,17 @@ RCT_EXPORT_METHOD(selectPrinter:(RCTPromiseResolveBlock)resolve
     };
     
     if([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) { // iPad
-        UIView *view = [[UIApplication sharedApplication] keyWindow].rootViewController.view;
-        [printPicker presentFromRect:view.frame inView:view animated:YES completionHandler:completionHandler];
+        UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
+        while (rootViewController.presentedViewController != nil) {
+            rootViewController = rootViewController.presentedViewController;
+        }
+        CGRect rect = CGRectMake(rootViewController.view.bounds.size.width/2, rootViewController.view.bounds.size.height/2, 1, 1);
+        [printPicker
+            presentFromRect:rect
+            inView:rootViewController.view
+            animated:YES
+            completionHandler:completionHandler
+        ];
     } else { // iPhone
         [printPicker presentAnimated:YES completionHandler:completionHandler];
     }
@@ -141,6 +154,13 @@ RCT_EXPORT_METHOD(selectPrinter:(RCTPromiseResolveBlock)resolve
         result = result.presentedViewController;
     }
     return result;
+    //TODO We may need it :
+//    UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
+//    while (rootViewController.presentedViewController != nil) {
+//        rootViewController = rootViewController.presentedViewController;
+//    }
+//    return rootViewController;
+
 }
 
 -(void)printInteractionControllerWillDismissPrinterOptions:(UIPrintInteractionController*)printInteractionController {}
