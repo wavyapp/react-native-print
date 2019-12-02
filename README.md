@@ -81,7 +81,7 @@ export default class RNPrintExample extends Component {
 
   // @NOTE iOS Only
   selectPrinter = async () => {
-    const selectedPrinter = await RNPrint.selectPrinter()
+    const selectedPrinter = await RNPrint.selectPrinter({ x: 100, y: 100 })
     this.setState({ selectedPrinter })
   }
 
@@ -165,8 +165,12 @@ const styles = StyleSheet.create({
 | `html` | `string` |  HTML string to print
 | `fileName` | `string` | Custom Filename excluding .pdf extension or remote file url NOTE: iOS only supports https protocols
 | `printerURL` | `string` | **iOS Only:** URL returned from `selectPrinterMethod()`
-| `isLandscape` | `bool` | Landscape print; default value is false 
+| `isLandscape` | `bool` | Landscape print; default value is false
+| `jobName` | `string` | **Android Only:** Name of printing job; default value is "Document"
 
 
-## selectPrinter()
-**iOS Only:** Prompt UI for user to select printer for silent printing
+## selectPrinter(options: Object)
+| Param | Type | Note |
+|---|---|---|
+| `x` | `string` | **iPad Only:** The x position of the popup dialog
+| `y` | `string` | **iPad Only:** The y position of the popup dialog
