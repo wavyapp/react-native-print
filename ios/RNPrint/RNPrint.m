@@ -123,53 +123,57 @@ RCT_EXPORT_METHOD(selectPrinter:(NSDictionary *)options
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
     
-    UIPrinterPickerController *printPicker = [UIPrinterPickerController printerPickerControllerWithInitiallySelectedPrinter: _pickedPrinter];
-    
-    printPicker.delegate = self;
-    
-    void (^completionHandler)(UIPrinterPickerController *, BOOL, NSError *) =
-    ^(UIPrinterPickerController *printerPicker, BOOL userDidSelect, NSError *error) {
-        if (!userDidSelect && error) {
-            NSLog(@"Printing could not complete because of error: %@", error);
-            reject(RCTErrorUnspecified, nil, RCTErrorWithMessage(error.description));
-        } else {
-            [UIPrinterPickerController printerPickerControllerWithInitiallySelectedPrinter:printerPicker.selectedPrinter];
-            if (userDidSelect) {
-                _pickedPrinter = printerPicker.selectedPrinter;
-                NSDictionary *printerDetails = @{
-                                                 @"name" : _pickedPrinter.displayName,
-                                                 @"url" : _pickedPrinter.URL.absoluteString,
-                                                 };
-                resolve(printerDetails);
+    if (@available(iOS 8.0, *)) {
+        UIPrinterPickerController *printPicker = [UIPrinterPickerController printerPickerControllerWithInitiallySelectedPrinter: _pickedPrinter];
+        
+        printPicker.delegate = self;
+        
+        void (^completionHandler)(UIPrinterPickerController *, BOOL, NSError *) =
+        ^(UIPrinterPickerController *printerPicker, BOOL userDidSelect, NSError *error) {
+            if (!userDidSelect && error) {
+                NSLog(@"Printing could not complete because of error: %@", error);
+                reject(RCTErrorUnspecified, nil, RCTErrorWithMessage(error.description));
+            } else {
+                [UIPrinterPickerController printerPickerControllerWithInitiallySelectedPrinter:printerPicker.selectedPrinter];
+                if (userDidSelect) {
+                    self->_pickedPrinter = printerPicker.selectedPrinter;
+                    NSDictionary *printerDetails = @{
+                        @"name" : self->_pickedPrinter.displayName,
+                        @"url" : self->_pickedPrinter.URL.absoluteString,
+                    };
+                    resolve(printerDetails);
+                }
             }
+        };
+        
+        if([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) { // iPad
+            UIView *view = [[UIApplication sharedApplication] keyWindow].rootViewController.view;
+            [printPicker presentFromRect:view.frame inView:view animated:YES completionHandler:completionHandler];
+            // UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
+            // while (rootViewController.presentedViewController != nil) {
+            //     rootViewController = rootViewController.presentedViewController;
+            // }
+            // CGRect rect = CGRectMake(rootViewController.view.bounds.size.width/2, rootViewController.view.bounds.size.height/2, 1, 1);
+            // [printPicker
+            //     presentFromRect:rect
+            //     inView:rootViewController.view
+            //     animated:YES
+            //     completionHandler:completionHandler
+            // ];
+            CGFloat _x = 0;
+            CGFloat _y = 0;
+            if (options[@"x"]){
+                _x = [RCTConvert CGFloat:options[@"x"]];
+            }
+            if (options[@"y"]){
+                _y = [RCTConvert CGFloat:options[@"y"]];
+            }
+            [printPicker presentFromRect:CGRectMake(_x, _y, 0, 0) inView:view animated:YES completionHandler:completionHandler];
+        } else { // iPhone
+            [printPicker presentAnimated:YES completionHandler:completionHandler];
         }
-    };
-    
-    if([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) { // iPad
-        UIView *view = [[UIApplication sharedApplication] keyWindow].rootViewController.view;
-        [printPicker presentFromRect:view.frame inView:view animated:YES completionHandler:completionHandler];
-        // UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
-        // while (rootViewController.presentedViewController != nil) {
-        //     rootViewController = rootViewController.presentedViewController;
-        // }
-        // CGRect rect = CGRectMake(rootViewController.view.bounds.size.width/2, rootViewController.view.bounds.size.height/2, 1, 1);
-        // [printPicker
-        //     presentFromRect:rect
-        //     inView:rootViewController.view
-        //     animated:YES
-        //     completionHandler:completionHandler
-        // ];
-        CGFloat _x = 0;
-        CGFloat _y = 0;
-        if (options[@"x"]){
-            _x = [RCTConvert CGFloat:options[@"x"]];
-        }
-        if (options[@"y"]){
-            _y = [RCTConvert CGFloat:options[@"y"]];
-        }
-        [printPicker presentFromRect:CGRectMake(_x, _y, 0, 0) inView:view animated:YES completionHandler:completionHandler];
-    } else { // iPhone
-        [printPicker presentAnimated:YES completionHandler:completionHandler];
+    } else {
+        // Fallback on earlier versions
     }
 }
 
