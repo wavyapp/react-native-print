@@ -88,7 +88,11 @@ RCT_EXPORT_METHOD(print:(NSDictionary *)options
     
     if (options[@"printerURL"]){
         _printerURL = [NSURL URLWithString:[RCTConvert NSString:options[@"printerURL"]]];
-        _pickedPrinter = [UIPrinter printerWithURL:_printerURL];
+        if (@available(iOS 8.0, *)) {
+            _pickedPrinter = [UIPrinter printerWithURL:_printerURL];
+        } else {
+            // Fallback on earlier versions
+        }
     }
     
     if(options[@"isLandscape"]) {
@@ -147,28 +151,32 @@ RCT_EXPORT_METHOD(selectPrinter:(NSDictionary *)options
         };
         
         if([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) { // iPad
-            UIView *view = [[UIApplication sharedApplication] keyWindow].rootViewController.view;
-            [printPicker presentFromRect:view.frame inView:view animated:YES completionHandler:completionHandler];
-            // UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
-            // while (rootViewController.presentedViewController != nil) {
-            //     rootViewController = rootViewController.presentedViewController;
-            // }
-            // CGRect rect = CGRectMake(rootViewController.view.bounds.size.width/2, rootViewController.view.bounds.size.height/2, 1, 1);
-            // [printPicker
-            //     presentFromRect:rect
-            //     inView:rootViewController.view
-            //     animated:YES
-            //     completionHandler:completionHandler
-            // ];
-            CGFloat _x = 0;
-            CGFloat _y = 0;
+             UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
+             while (rootViewController.presentedViewController != nil) {
+                 rootViewController = rootViewController.presentedViewController;
+             }
+            CGFloat _x = rootViewController.view.bounds.size.width/2;
+            CGFloat _y = rootViewController.view.bounds.size.height/2;
+            CGFloat _width = 1;
+            CGFloat _height = 1;
             if (options[@"x"]){
                 _x = [RCTConvert CGFloat:options[@"x"]];
             }
             if (options[@"y"]){
                 _y = [RCTConvert CGFloat:options[@"y"]];
             }
-            [printPicker presentFromRect:CGRectMake(_x, _y, 0, 0) inView:view animated:YES completionHandler:completionHandler];
+            if (options[@"width"]){
+                _width= [RCTConvert CGFloat:options[@"width"]];
+            }
+            if (options[@"height"]){
+                _height = [RCTConvert CGFloat:options[@"height"]];
+            }
+            CGRect rect = CGRectMake(_x, _y, _width, _height);
+            if ([printPicker presentFromRect:rect inView:rootViewController.view animated:YES completionHandler:completionHandler]){
+                RCTLogInfo(@"selectPrinter -> %@", @"Open");
+            } else {
+                RCTLogInfo(@"selectPrinter -> %@", @"Error open");
+            }
         } else { // iPhone
             [printPicker presentAnimated:YES completionHandler:completionHandler];
         }
@@ -185,13 +193,6 @@ RCT_EXPORT_METHOD(selectPrinter:(NSDictionary *)options
         result = result.presentedViewController;
     }
     return result;
-    //TODO We may need it :
-//    UIViewController *rootViewController = UIApplication.sharedApplication.delegate.window.rootViewController;
-//    while (rootViewController.presentedViewController != nil) {
-//        rootViewController = rootViewController.presentedViewController;
-//    }
-//    return rootViewController;
-
 }
 
 -(void)printInteractionControllerWillDismissPrinterOptions:(UIPrintInteractionController*)printInteractionController {}
